@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row animate-fade-up">
+    <!-- Left Column: Upload Section & Instructions -->
+    <div class="col-md-4 mb-4">
+        <div class="glass-card h-100">
+            <h3 class="mb-4 fw-bold" data-i18n="dashboard.uploadTitle">Upload ECG</h3>
+            <div class="p-3 border border-2 rounded-3 text-center mb-3 section-card">
+                <form method="POST" action="" enctype="multipart/form-data" id="uploadForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Image Preview Area -->
+                    <div id="imagePreviewContainer" class="mb-3 d-none">
+                        <img id="imagePreview" src="" alt="ECG Preview" class="img-fluid rounded shadow-sm" style="max-height: 200px; object-fit: contain;">
+                    </div>
+
+                    <div class="mb-4 mt-3">
+                        {{ form.picture(class="form-control", id="pictureInput", accept="image/png, image/jpeg, image/jpg") }}
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <!-- Submit button with loading text -->
+                        <button type="submit" class="btn btn-modern-primary" id="submitBtn">
+                            <span id="submitText">Analyze</span>
+                            <span class="spinner-border spinner-border-sm d-none" id="submitSpinner" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="alert alert-warning mb-0">
+                <h6 class="fw-bold"><i class="bi bi-info-circle"></i> <span data-i18n="dashboard.tipsTitle">Tips:</span></h6>
+                <ul class="small mb-0 ps-3">
+                    <li data-i18n="dashboard.tip1">Ensure image is clear.</li>
+                    <li data-i18n="dashboard.tip2">Supported: JPG, PNG.</li>
+                    <li data-i18n="dashboard.tip3">Cropped ECG leads work best.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Dashboard Data, Chart, and Timeline -->
+    <div class="col-md-8">
+        
+        <!-- Proactive Action Prompts -->
+        {% if history.items and history.items[0].result != 'Normal' %}
+        <div class="alert alert-danger border-0 mb-4 shadow-sm">
+            <h5 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>Attention Required</h5>
+            <p class="mb-2">Your most recent ECG scan detected a potential anomaly ({{ (history.items[0].confidence * 100)|round(1) }}% confidence).</p>
+                <div class="d-flex gap-2">
+                <a href="{{ url_for('main.medical_help') }}" class="btn btn-sm btn-danger fw-bold">Find Medical Help</a>
+                {% if current_user.is_authenticated and current_user.role not in ['admin', 'doctor'] %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-outline-danger bg-white">Ask AI Assistant</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="glass-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h3 class="mb-1 fw-bold" data-i18n="dashboard.timelineTitle">ECG Risk Timeline</h3>
+                    <p class="text-muted-custom mb-0" data-i18n="dashboard.timelineSubtitle">Track your ECG predictions over time.</p>
+                </div>
+                
+                <!-- Filter Dropdown -->
+                {% if history.items %}
+                <div>
+                    <select id="timelineFilter" class="form-select form-select-sm shadow-sm">
+                        <option value="all">Show All</option>
+                        <option value="abnormal">Show Abnormal Only</option>
+                        <option value="normal">Show Normal Only</option>
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="timeline-stack position-relative" id="timelineContainer">
+                {% for pred in history.items %}
+                <div class="timeline-item d-flex gap-3 mb-4 filter-item {{ 'item-normal' if pred.result == 'Normal' else 'item-abnormal' }}">
+                    <div class="timeline-dot {% if pred.result == 'Normal' %}bg-success{% else %}bg-danger{% endif %} shadow-sm"></div>
+                    <div class="flex-grow-1 section-card">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="mb-1 fw-bold">Analyzed on {{ pred.timestamp.strftime('%m/%d/%Y') }}</h5>
+                                <div class="text-muted-custom small">{{ pred.timestamp.strftime('%I:%M %p') }}</div>
+                            </div>
+                            {% if pred.result == 'Normal' %}
+                            <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">Normal</span>
+                            {% else %}
+                            <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">Abnormal</span>
+                            {% endif %}
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-bold" data-i18n="dashboard.confidence">Model Confidence</span>
+                                <span class="fw-bold">{{ (pred.confidence * 100)|round(1) }}%</span>
+                            </div>
+                            <div class="progress" style="height: 10px; border-radius: 5px;">
+                                <div class="progress-bar confidence-fill progress-bar-striped progress-bar-animated {% if pred.confidence > 0.9 %}bg-success{% else %}bg-warning{% endif %}"
+                                    role="progressbar" data-confidence="{{ (pred.confidence * 100)|round(2) }}"></div>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            <a href="{{ url_for('main.result', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary text-decoration-none shadow-sm" data-i18n="dashboard.viewResult">
+                                <i class="bi bi-eye"></i> View Result
+                            </a>
+                            {% if medical_complete %}
+                            <a href="{{ url_for('main.download_report', prediction_id=pred.id) }}" class="btn btn-sm btn-modern-primary text-decoration-none shadow-sm" data-i18n="dashboard.downloadReport">
+                                <i class="bi bi-file-earmark-pdf"></i> Download Report
+                            </a>
+                            {% else %}
+                            <span class="btn btn-sm btn-modern-primary disabled opacity-50" data-i18n="dashboard.completeProfile">Complete Profile First</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Empty State Graphics -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <!-- Medical/ECG SVG Icon for Empty State -->
+                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" class="text-muted opacity-50" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12H17L14 3L10 21L7 12H3"></path>
+                        </svg>
+                    </div>
+                    <h5 class="fw-bold mb-2" data-i18n="dashboard.noHistory">No ECG scans found yet</h5>
+                    <p class="text-muted-custom mb-3" data-i18n="dashboard.noHistorySubtitle">Upload an ECG image on the left to create your first report and start tracking your heart health.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination Controls -->
+            {% if history.pages and history.pages > 1 %}
+            <nav aria-label="Timeline Pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not history.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.dashboard', page=history.prev_num) if history.has_prev else '#' }}" tabindex="-1">Previous</a>
+                    </li>
+                    
+                    {% for page_num in history.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if history.page == page_num %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.dashboard', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not history.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.dashboard', page=history.next_num) if history.has_next else '#' }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% if not medical_complete %}
+            <div class="alert alert-warning border-0 mt-4 mb-0 shadow-sm">
+                <i class="bi bi-exclamation-circle-fill me-1"></i>
+                <span data-i18n="dashboard.completeProfileNotice">Please complete your Profile medical information to enable report generation.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- 1. Progress Bar Initialization ---
+        document.querySelectorAll('.confidence-fill').forEach((bar) => {
+            const confidence = bar.dataset.confidence || '0';
+            bar.style.width = `${confidence}%`;
+        });
+
+        // --- 2. Image Preview Logic ---
+        const pictureInput = document.getElementById('pictureInput');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+
+        if(pictureInput) {
+            pictureInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreviewContainer.classList.remove('d-none');
+                        imagePreviewContainer.classList.add('d-block');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.src = '';
+                    imagePreviewContainer.classList.remove('d-block');
+                    imagePreviewContainer.classList.add('d-none');
+                }
+            });
+        }
+
+        // --- 3. Loading Spinner Logic on Form Submit ---
+        const uploadForm = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        const submitSpinner = document.getElementById('submitSpinner');
+
+        if(uploadForm) {
+            uploadForm.addEventListener('submit', function() {
+                // If the user actually selected a file
+                if(pictureInput && pictureInput.files.length > 0) {
+                    submitBtn.disabled = true;
+                    submitText.textContent = "Analyzing...";
+                    submitSpinner.classList.remove('d-none');
+                }
+            });
+        }
+
+        // --- 4. Filtering Logic ---
+        const filterSelect = document.getElementById('timelineFilter');
+        if(filterSelect) {
+            filterSelect.addEventListener('change', function() {
+                const val = this.value;
+                document.querySelectorAll('.filter-item').forEach(item => {
+                    if (val === 'all') {
+                        item.style.setProperty('display', 'flex', 'important');
+                    } else if (val === 'abnormal' && item.classList.contains('item-abnormal')) {
+                        item.style.setProperty('display', 'flex', 'important');
+                    } else if (val === 'normal' && item.classList.contains('item-normal')) {
+                        item.style.setProperty('display', 'flex', 'important');
+                    } else {
+                        item.style.setProperty('display', 'none', 'important');
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

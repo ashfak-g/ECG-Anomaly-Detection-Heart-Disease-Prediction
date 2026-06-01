@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - HeartAnomaly AI</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('heart-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top glass-navbar">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">HeartAnomaly AI</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.analytics" href="{{ url_for('main.admin_analytics') }}">Analytics</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.adminUsers" href="{{ url_for('main.admin_users') }}">Admin Users</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.doctorVerification" href="{{ url_for('main.admin_doctors') }}">Doctor Verification</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.auditLogs" href="{{ url_for('main.admin_audit') }}">Audit Logs</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.profile" href="{{ url_for('main.profile') }}">Profile</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact nav-link-logout" data-i18n="nav.logout" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    {% elif current_user.role == 'doctor' %}
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-compact d-flex align-items-center" href="{{ url_for('main.doctor_dashboard') }}">
+                            Doctor Dashboard
+                            {% if doctor_notification_count and doctor_notification_count > 0 %}
+                            <span class="badge bg-danger ms-2">{{ doctor_notification_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" href="{{ url_for('main.doctor_availability') }}">Availability</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.profile" href="{{ url_for('main.profile') }}">Profile</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact nav-link-logout" data-i18n="nav.logout" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.medicalInfo" href="{{ url_for('main.medical_info') }}">Medical Info</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.nearbyHelp" href="{{ url_for('main.medical_help') }}">Nearby Help</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" href="{{ url_for('main.appointments') }}">Appointments</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.dashboard" href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.profile" href="{{ url_for('main.profile') }}">Profile</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact nav-link-logout" data-i18n="nav.logout" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    {% endif %}
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.login" href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.register" href="{{ url_for('auth.register') }}">Register</a></li>
+                    <li class="nav-item"><a class="nav-link nav-link-compact" data-i18n="nav.doctorPortal" href="{{ url_for('auth.doctor_portal') }}">Doctor Portal</a></li>
+                    {% endif %}
+                </ul>
+                <!-- Theme Toggle Button: Visible for all users except admin -->
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role != 'admin' %}
+                    <button type="button" id="themeToggle" class="btn theme-toggle-btn ms-lg-2 mt-3 mt-lg-0" aria-label="Toggle color theme">
+                        Dark Mode
+                    </button>
+                    {% endif %}
+                {% else %}
+                <!-- Show button for unauthenticated users too -->
+                <button type="button" id="themeToggle" class="btn theme-toggle-btn ms-lg-2 mt-3 mt-lg-0" aria-label="Toggle color theme">
+                    Dark Mode
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container app-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show mb-4">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    {% if current_user.is_authenticated and current_user.role not in ['admin', 'doctor'] %}
+    <!-- Chat Widget -->
+    <div class="chat-widget-container">
+        <!-- Chat Toggle Button -->
+        <button id="chatToggle"
+            class="chat-btn-floating position-fixed bottom-0 end-0 m-4 d-flex align-items-center justify-content-center">
+            <i class="bi bi-chat-dots-fill fs-3"></i>
+        </button>
+
+        <!-- Chat Window -->
+        <div id="chatWindow" class="chat-card position-fixed"
+            style="bottom: 100px; right: 30px; width: 360px; height: 550px; z-index: 1000; display: none; flex-direction: column;">
+
+            <!-- Header -->
+            <div class="chat-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 32px; height: 32px;">
+                        <i class="bi bi-robot fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-white" style="font-size: 1rem;">Dr. AI</div>
+                        <div class="text-white opacity-75" style="font-size: 0.75rem;" data-i18n="chat.subtitle">Online Assistant</div>
+                    </div>
+                </div>
+                <button id="closeChat" class="btn btn-sm text-white opacity-75 hover-opacity-100"><i
+                        class="bi bi-x-lg"></i></button>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="chatMessages" class="chat-messages flex-grow-1 p-3 d-flex flex-column gap-3"
+                style="overflow-y: auto;">
+                <!-- Intro Message -->
+                <div class="msg-bubble msg-bot shadow-sm">
+                    <span data-i18n-html="chat.intro">Hello! I am <strong>Dr. AI</strong>. <br>
+                    I can help you understand your ECG results or find nearby medical help. How can I assist you?</span>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <div class="input-group">
+                    <input type="text" id="chatInput" class="form-control chat-input"
+                        placeholder="Type your health question..." aria-label="Type your health question..." data-i18n-placeholder="chat.placeholder">
+                    <button id="sendMessage"
+                        class="btn btn-primary rounded-circle ms-2 d-flex align-items-center justify-content-center"
+                        style="width: 45px; height: 45px; padding: 0;">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
+    <script>
+        const translations = {
+            en: {
+                nav: {
+                    medicalInfo: 'Medical Info',
+                    nearbyHelp: 'Nearby Help',
+                    learn: 'Learn',
+                    dashboard: 'Dashboard',
+                    analytics: 'Analytics',
+                    adminUsers: 'Admin Users',
+                    doctorVerification: 'Doctor Verification',
+                    auditLogs: 'Audit Logs',
+                    profile: 'Profile',
+                    logout: 'Logout',
+                    login: 'Login',
+                    register: 'Register',
+                    doctorPortal: 'Doctor Portal'
+                },
+                home: {
+                    heroTitle: 'HeartAnomaly AI',
+                    heroSubtitle: 'A state-of-the-art AI research tool for analyzing ECG images. Upload your scan and get instant insights using deep learning.',
+                    disclaimerLabel: 'Disclaimer:',
+                    disclaimerText: 'This tool is for academic research only and does NOT provide medical diagnosis.',
+                    login: 'Login',
+                    register: 'Register',
+                    dashboard: 'Go to Dashboard',
+                    sectionTitle: 'Understanding ECG Anomalies',
+                    sectionSubtitle: 'Learn about the cardiac cycle and common irregularities.',
+                    pWaveTitle: 'The P-Wave',
+                    pWaveBody: 'The P-wave, the first positive deflection on the ECG, represents atrial depolarization (contraction). It is essential for assessing proper electrical impulse generation from the SA node.',
+                    qrsTitle: 'QRS Complex',
+                    qrsBody: 'The QRS complex corresponds to the depolarization of the ventricles. Its shape and duration are critical indicators of ventricular health and conduction system integrity.',
+                    tWaveTitle: 'The T-Wave',
+                    tWaveBody: 'The T-wave follows the QRS complex and represents ventricular repolarization (recovery). Abnormalities here can indicate ischemia or electrolyte imbalances.',
+                    stagesTitle: 'Common Stages of Heart Anomalies',
+                    normalTitle: 'Normal Sinus Rhythm',
+                    normalBody: 'Regular rhythm, 60-100 bpm.',
+                    arrhythmiaTitle: 'Arrhythmia',
+                    arrhythmiaBody: 'Irregular beat (e.g., AFib, Bradycardia).',
+                    ischemiaTitle: 'Ischemia/Infarction',
+                    ischemiaBody: 'ST-segment changes, potential heart attack.'
+                },
+                login: {
+                    title: 'Login',
+                    email: 'Email address',
+                    password: 'Password',
+                    needAccount: 'Need an account?',
+                    signUp: 'Sign Up'
+                },
+                register: {
+                    title: 'Create Account',
+                    name: 'Full name',
+                    email: 'Email address',
+                    password: 'Password',
+                    confirmPassword: 'Confirm password',
+                    haveAccount: 'Already have an account?',
+                    login: 'Login'
+                },
+                dashboard: {
+                    uploadTitle: 'Upload ECG',
+                    tipsTitle: 'Tips:',
+                    tip1: 'Ensure image is clear.',
+                    tip2: 'Supported: JPG, PNG.',
+                    tip3: 'Cropped ECG leads work best.',
+                    timelineTitle: 'ECG Risk Timeline',
+                    timelineSubtitle: 'Track your ECG predictions over time and download a report for each analysis.',
+                    confidence: 'Confidence',
+                    viewResult: 'View Result',
+                    downloadReport: 'Download Report',
+                    completeProfile: 'Complete Profile First',
+                    noHistory: 'No ECG timeline found yet.',
+                    noHistorySubtitle: 'Upload an ECG image to create your first report and timeline entry.',
+                    completeProfileNotice: 'Please complete your medical information in Profile before downloading ECG reports.'
+                },
+                medicalInfo: {
+                    title: 'Medical Information',
+                    subtitle: 'Complete these details to unlock ECG report download.',
+                    complete: 'Complete',
+                    incomplete: 'Incomplete',
+                    phone: 'Enter 11 digit phone number',
+                    age: 'Enter age',
+                    bp: 'Example: 120/80',
+                    allergy: 'List allergies or other relevant conditions'
+                },
+                medicalHelp: {
+                    title: 'Find Medical Help Nearby',
+                    subtitle: 'Select your city to see nearby hospitals and cardiology support on the map.',
+                    useLocation: 'Use My Current Location',
+                    locationPending: 'Location not shared yet.',
+                    selectLabel: 'Select City',
+                    selectPlaceholder: 'Select your closest city',
+                    loadPrompt: 'Select a city to load nearby hospitals.',
+                    noHospitals: 'No hospitals found for this city.',
+                    geolocationUnsupported: 'Geolocation is not supported by this browser.',
+                    httpsRequired: 'Location needs HTTPS to get precise GPS data.',
+                    locating: 'Getting your location and improving precision...',
+                    improving: 'Improving location',
+                    locked: 'Location locked',
+                    bestAvailable: 'Best available location',
+                    locationPermissionDenied: 'Unable to access your location. Please allow location permission and enable GPS.',
+                    loadFailed: 'Failed to load data.',
+                    userLocation: 'Your current location'
+                },
+                profile: {
+                    title: 'User Profile',
+                    accountInfo: 'Account Information',
+                    changePassword: 'Change Password',
+                    password: 'Leave blank to keep current'
+                },
+                result: {
+                    title: 'Analysis Result',
+                    statusLabel: 'Status:',
+                    normal: 'Normal',
+                    abnormal: 'Abnormal',
+                    confidenceLabel: 'Confidence:',
+                    disclaimerLabel: 'Disclaimer:',
+                    disclaimerText: 'This result is generated by an AI model for research purposes only. It is not a medical diagnosis. Please consult a cardiologist for clinical interpretation.',
+                    backToDashboard: 'Back to Dashboard',
+                    downloadReport: 'Download Report',
+                    completeProfile: 'Complete Profile First'
+                },
+                learn: {
+                    title: 'Learned ECG Wave',
+                    pWaveTitle: 'P Wave - Atrial Contraction',
+                    pWaveBody: 'Represents the electrical depolarization of the atria (upper chambers). This triggers them to contract and push blood into the ventricles. Absence indicates A-Fib.',
+                    qrsTitle: 'QRS Complex - Ventricular Beat',
+                    qrsBody: 'The large spike representing the depolarization of the ventricles (lower chambers). This is the main heartbeat that pumps blood to the body.',
+                    tWaveTitle: 'T Wave - Recovery Phase',
+                    tWaveBody: 'Represents the repolarization (recovery) of the ventricles, preparing them for the next beat. Inverted T-waves can signal ischemia.',
+                    backHome: 'Back to Home'
+                },
+                chat: {
+                    subtitle: 'Online Assistant',
+                    placeholder: 'Type your health question...',
+                    intro: 'Hello! I am <strong>Dr. AI</strong>. <br>I can help you understand your ECG results or find nearby medical help. How can I assist you?'
+                }
+            }
+        };
+
+        const languageElements = document.querySelectorAll('[data-i18n]');
+        const htmlRoot = document.documentElement;
+        const defaultLanguage = 'en';
+        
+        // Get theme toggle button - defer until DOM is ready
+        let themeToggle = null;
+        function getThemeToggle() {
+            if (!themeToggle) {
+                themeToggle = document.getElementById('themeToggle');
+            }
+            return themeToggle;
+        }
+
+        function setLanguage(language) {
+            const activeLanguage = translations[language] ? language : 'en';
+            const copy = translations[activeLanguage];
+
+            htmlRoot.lang = activeLanguage;
+
+            languageElements.forEach((element) => {
+                const key = element.dataset.i18n;
+                const value = key.split('.').reduce((accumulator, part) => accumulator && accumulator[part], copy);
+                if (value) {
+                    element.textContent = value;
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+                const key = element.dataset.i18nPlaceholder;
+                const value = key.split('.').reduce((accumulator, part) => accumulator && accumulator[part], copy);
+                if (value) {
+                    element.placeholder = value;
+                    element.setAttribute('aria-label', value);
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+                const key = element.dataset.i18nAriaLabel;
+                const value = key.split('.').reduce((accumulator, part) => accumulator && accumulator[part], copy);
+                if (value) {
+                    element.setAttribute('aria-label', value);
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-html]').forEach((element) => {
+                const key = element.dataset.i18nHtml;
+                const value = key.split('.').reduce((accumulator, part) => accumulator && accumulator[part], copy);
+                if (value) {
+                    element.innerHTML = value;
+                }
+            });
+
+            localStorage.setItem('ecg-language', 'en');
+        }
+        setLanguage(defaultLanguage);
+        window.ecgI18n = {
+            translations,
+            getLanguage: () => 'en',
+            t: (key) => {
+                const dictionary = translations.en;
+                return key.split('.').reduce((accumulator, part) => accumulator && accumulator[part], dictionary);
+            }
+        };
+
+        function setTheme(theme) {
+            const activeTheme = theme === 'dark' ? 'dark' : 'light';
+            htmlRoot.setAttribute('data-theme', activeTheme);
+            localStorage.setItem('heart-theme', activeTheme);
+            const btn = getThemeToggle();
+            if (btn) {
+                btn.textContent = activeTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+
+        setTheme(localStorage.getItem('heart-theme') || 'light');
+
+        // Attach theme toggle listener - DOM is ready since script is at end of body
+        const btn = getThemeToggle();
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const nextTheme = htmlRoot.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                setTheme(nextTheme);
+            });
+        }
+
+        {% if current_user.is_authenticated %}
+
+        // Chat Widget Logic
+        const chatToggle = document.getElementById('chatToggle');
+        const chatWindow = document.getElementById('chatWindow');
+        const closeChat = document.getElementById('closeChat');
+        const chatInput = document.getElementById('chatInput');
+        const sendMessage = document.getElementById('sendMessage');
+        const chatMessages = document.getElementById('chatMessages');
+
+        // Toggle Visibility
+        function toggleChat() {
+            if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
+                chatWindow.style.display = 'flex';
+                // chatToggle.style.transform = 'scale(0)'; // Optional: Hide button on open
+                chatToggle.style.opacity = '0';
+                chatToggle.style.pointerEvents = 'none';
+                chatInput.focus();
+            } else {
+                chatWindow.style.display = 'none';
+                // chatToggle.style.transform = 'scale(1)';
+                chatToggle.style.opacity = '1';
+                chatToggle.style.pointerEvents = 'auto';
+            }
+        }
+
+        chatToggle.addEventListener('click', toggleChat);
+        closeChat.addEventListener('click', toggleChat);
+
+        // Send Message
+        function sendUserMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            // Add User Message
+            addMessage(text, 'user');
+            chatInput.value = '';
+
+            // Show Loading
+            const loadingId = addMessage('Thinking...', 'bot', true);
+
+            // API Call
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    removeMessage(loadingId);
+                    simulateTyping(data.response);
+                })
+                .catch(err => {
+                    removeMessage(loadingId);
+                    addMessage('Sorry, I am having trouble connecting.', 'bot');
+                });
+        }
+
+        sendMessage.addEventListener('click', sendUserMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendUserMessage();
+        });
+
+        // Helper: Add Message to UI
+        function addMessage(text, sender, isLoading = false) {
+            const div = document.createElement('div');
+            const isUser = sender === 'user';
+
+            div.className = `msg-bubble ${isUser ? 'msg-user' : 'msg-bot'}`;
+            // Handle HTML content for bot messages (e.g., line breaks)
+            if (!isUser) {
+                div.innerHTML = text;
+            } else {
+                div.textContent = text;
+            }
+
+            if (isLoading) div.id = 'loadingMsg';
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return div.id;
+        }
+
+        function removeMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // Helper: Simulate Typing Effect
+        function simulateTyping(text) {
+            const div = document.createElement('div');
+            div.className = 'msg-bubble msg-bot';
+            chatMessages.appendChild(div);
+
+            let i = 0;
+            const speed = 10; // faster typing
+            function type() {
+                if (i < text.length) {
+                    // Start of a tag
+                    if (text.charAt(i) === '<') {
+                        // Simple HTML skipping for typing effect (basic implementation)
+                        const endTagIndex = text.indexOf('>', i);
+                        if (endTagIndex !== -1) {
+                            div.innerHTML += text.substring(i, endTagIndex + 1);
+                            i = endTagIndex + 1;
+                        } else {
+                            div.innerHTML += text.charAt(i);
+                            i++;
+                        }
+                    } else {
+                        div.innerHTML += text.charAt(i);
+                        i++;
+                    }
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+    </script>
+    {% endif %}
+</body>
+
+</html>

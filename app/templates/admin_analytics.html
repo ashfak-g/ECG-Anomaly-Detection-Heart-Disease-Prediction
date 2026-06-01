@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Admin - Analytics Dashboard</h2>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('main.admin_doctors') }}" class="btn btn-outline-primary btn-sm">Doctor Verification</a>
+      <a href="{{ url_for('main.admin_audit') }}" class="btn btn-outline-primary btn-sm">Audit Logs</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Total Users</h6>
+          <h3 class="mb-0">{{ total_users }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Patients</h6>
+          <h3 class="mb-0">{{ total_patients }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Doctors</h6>
+          <h3 class="mb-0">{{ total_doctors }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-2">Admins</h6>
+          <h3 class="mb-0">{{ total_admins }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Doctor Verification Status</h6>
+          <div class="d-flex justify-content-between mb-2"><span>Pending</span><strong>{{ doctors_pending }}</strong></div>
+          <div class="d-flex justify-content-between mb-2"><span>Approved</span><strong>{{ doctors_approved }}</strong></div>
+          <div class="d-flex justify-content-between"><span>Rejected</span><strong>{{ doctors_rejected }}</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Predictions</h6>
+          <div class="d-flex justify-content-between mb-2"><span>Total</span><strong>{{ total_predictions }}</strong></div>
+          <div class="d-flex justify-content-between mb-2"><span>Today</span><strong>{{ predictions_today }}</strong></div>
+          <div class="d-flex justify-content-between"><span>Last 7 days</span><strong>{{ predictions_7d }}</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Clinical Risk Mix</h6>
+          {% set total = normal_predictions + abnormal_predictions %}
+          {% set abnormal_pct = ((abnormal_predictions / total) * 100) if total > 0 else 0 %}
+          <div class="d-flex justify-content-between mb-1"><span>Normal</span><strong>{{ normal_predictions }}</strong></div>
+          <div class="d-flex justify-content-between mb-2"><span>Abnormal</span><strong>{{ abnormal_predictions }}</strong></div>
+          <div class="progress" style="height: 10px;">
+            <div class="progress-bar bg-danger" style="width: {{ abnormal_pct|round(1) }}%"></div>
+            <div class="progress-bar bg-success" style="width: {{ (100 - abnormal_pct)|round(1) }}%"></div>
+          </div>
+          <small class="text-muted">Report downloads (7 days): {{ report_downloads_7d }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="mb-3">Recent Audit Activity</h5>
+      <div class="table-responsive table-shell">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>User ID</th>
+              <th>Action</th>
+              <th>Resource</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in recent_audits %}
+            <tr>
+              <td>{{ item.timestamp.strftime('%Y-%m-%d %H:%M:%S') if item.timestamp else '-' }}</td>
+              <td>{{ item.user_id or '-' }}</td>
+              <td>{{ item.action }}</td>
+              <td>{{ item.resource_type or '-' }}{% if item.resource_id %}:{{ item.resource_id }}{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-muted text-center">No audit events available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

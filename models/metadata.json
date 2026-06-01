@@ -1,0 +1,28 @@
+{
+  "class_names": [
+    "N",
+    "S",
+    "V",
+    "F",
+    "Q"
+  ],
+  "class_full": [
+    "Normal",
+    "Supraventricular",
+    "Ventricular",
+    "Fusion",
+    "Unclassifiable"
+  ],
+  "alpha_vector": [
+    0.012707527726888657,
+    0.1957111656665802,
+    0.15841928124427795,
+    0.4892779588699341,
+    0.1438841074705124
+  ],
+  "input_length": 187,
+  "num_classes": 5,
+  "inter_patient": true,
+  "test_accuracy": 97.44,
+  "test_auc": 0.998
+}

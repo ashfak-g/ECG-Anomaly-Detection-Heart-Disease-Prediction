@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="glass-card">
+    <h2 class="mb-3">Admin — Users</h2>
+    <div class="table-responsive table-shell">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Created</th>
+            <th>Email Update</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.name }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.role }}</td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '' }}</td>
+            <td>
+              <form method="post" class="d-flex gap-1" style="margin: 0;">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <input type="hidden" name="action" value="update_email">
+                <input type="email" name="email" value="{{ u.email }}" class="form-control form-control-sm" style="min-width:180px; margin: 0;" required>
+                <button type="submit" class="btn btn-modern-primary btn-sm" style="white-space: nowrap;">Update</button>
+              </form>
+            </td>
+            <td>
+              {% if u.id != current_user.id %}
+              <form method="post" style="margin: 0; display: inline;">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <input type="hidden" name="action" value="delete_user">
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete user &quot;{{ u.name }}&quot;? This cannot be undone.')">Delete</button>
+              </form>
+              {% else %}
+              <span class="badge bg-secondary">Current</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

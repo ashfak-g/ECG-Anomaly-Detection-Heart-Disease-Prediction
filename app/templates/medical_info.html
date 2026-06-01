@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center animate-fade-up">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+                <div>
+                    <h2 class="mb-1 fw-bold"><i class="bi bi-file-medical me-2"></i>Medical Information</h2>
+                    <p class="text-muted-custom mb-0">Update your details to help doctors understand your cardiovascular profile.</p>
+                </div>
+                {% if medical_complete %}
+                <span class="badge bg-success rounded-pill px-3 py-2"><i class="bi bi-check-circle me-1"></i>Complete</span>
+                {% else %}
+                <span class="badge bg-warning text-dark rounded-pill px-3 py-2"><i class="bi bi-exclamation-circle me-1"></i>Incomplete</span>
+                {% endif %}
+            </div>
+
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <!-- Section 1: Personal Target Details -->
+                <h5 class="fw-bold mb-3 mt-4 text-primary"><i class="bi bi-person-badge me-2"></i>Personal Details</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        {{ form.phone_number.label(class="form-label fw-semibold") }}
+                        {{ form.phone_number(class="form-control", placeholder="Enter 11 digit phone number", inputmode="numeric", pattern="[0-9]{11}", minlength="11", maxlength="11") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.age.label(class="form-label fw-semibold") }}
+                        {{ form.age(class="form-control", placeholder="Enter age") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.gender.label(class="form-label fw-semibold") }}
+                        {{ form.gender(class="form-select") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.blood_group.label(class="form-label fw-semibold") }}
+                        {{ form.blood_group(class="form-select") }}
+                    </div>
+                </div>
+
+                <!-- Section 2: Body Metrics & Vitals -->
+                <h5 class="fw-bold mb-3 mt-5 text-primary"><i class="bi bi-clipboard2-pulse me-2"></i>Body Metrics & Vitals</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        {{ form.weight.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            {{ form.weight(class="form-control", placeholder="E.g., 70", id="weightInput") }}
+                            <span class="input-group-text bg-light text-muted">kg</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.height.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            {{ form.height(class="form-control", placeholder="E.g., 170", id="heightInput") }}
+                            <span class="input-group-text bg-light text-muted">cm</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted">Calculated BMI</label>
+                        <input type="text" id="bmiResult" class="form-control bg-light" placeholder="---" disabled>
+                    </div>
+                    <div class="col-md-12">
+                        {{ form.blood_pressure.label(class="form-label fw-semibold") }}
+                        {{ form.blood_pressure(class="form-control", placeholder="120/80 (Systolic/Diastolic)", id="bpInput") }}
+                        <small class="text-muted">Type the numbers; slash will be added automatically.</small>
+                    </div>
+                </div>
+
+                <!-- Section 3: Heart Health History -->
+                <h5 class="fw-bold mb-3 mt-5 text-primary"><i class="bi bi-heart-pulse me-2"></i>Heart Health History</h5>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-semibold mb-2">Previous Heart Conditions & Risks</label>
+                        {% set existing_conds = current_user.medical_info.heart_conditions if current_user.medical_info and current_user.medical_info.heart_conditions else "" %}
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="heart_conditions_list" value="High Blood Pressure" 
+                                {% if 'High Blood Pressure' in existing_conds %}checked{% endif %}>
+                                <label class="form-check-label">High Blood Pressure</label>
+                            </div>
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="heart_conditions_list" value="Arrhythmia"
+                                {% if 'Arrhythmia' in existing_conds %}checked{% endif %}>
+                                <label class="form-check-label">Arrhythmia</label>
+                            </div>
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="heart_conditions_list" value="Previous Heart Attack"
+                                {% if 'Previous Heart Attack' in existing_conds %}checked{% endif %}>
+                                <label class="form-check-label">Previous Heart Attack</label>
+                            </div>
+                            <div class="form-check custom-checkbox">
+                                <input class="form-check-input" type="checkbox" name="heart_conditions_list" value="Pacemaker"
+                                {% if 'Pacemaker' in existing_conds %}checked{% endif %}>
+                                <label class="form-check-label">Pacemaker</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 mt-3">
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3">
+                                <div class="form-check">
+                                    {{ form.diabetes(class="form-check-input") }}
+                                    {{ form.diabetes.label(class="form-check-label fw-semibold text-danger") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 mt-3">
+                        {{ form.allergy.label(class="form-label fw-semibold") }}
+                        {{ form.allergy(class="form-control", rows="3", placeholder="Other allergies or relevant conditions not listed above...") }}
+                    </div>
+                </div>
+
+                <!-- Section 4: Emergency Contacts -->
+                <h5 class="fw-bold mb-3 mt-5 text-primary"><i class="bi bi-telephone-plus me-2"></i>Emergency Contact</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        {{ form.emergency_contact_name.label(class="form-label fw-semibold") }}
+                        {{ form.emergency_contact_name(class="form-control", placeholder="Relative/Friend's Name") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.emergency_contact_phone.label(class="form-label fw-semibold") }}
+                        {{ form.emergency_contact_phone(class="form-control", placeholder="Enter 11 digit emergency phone") }}
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-5">
+                    {{ form.submit(class="btn btn-modern-primary btn-lg fw-bold") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Live BMI Calculator
+    const weightInput = document.getElementById('weightInput');
+    const heightInput = document.getElementById('heightInput');
+    const bmiResult = document.getElementById('bmiResult');
+
+    function calculateBMI() {
+        const weight = parseFloat(weightInput.value);
+        const heightMeters = parseFloat(heightInput.value) / 100;
+
+        if (weight > 0 && heightMeters > 0) {
+            const bmi = (weight / (heightMeters * heightMeters)).toFixed(1);
+            let category = "";
+            let color = "";
+            
+            if (bmi < 18.5) { category = "Underweight"; color = "text-warning"; }
+            else if (bmi >= 18.5 && bmi < 24.9) { category = "Normal weight"; color = "text-success"; }
+            else if (bmi >= 25 && bmi < 29.9) { category = "Overweight"; color = "text-warning"; }
+            else { category = "Obese"; color = "text-danger"; }
+            
+            bmiResult.value = `${bmi} (${category})`;
+            bmiResult.className = `form-control fw-bold bg-light ${color}`;
+        } else {
+            bmiResult.value = "---";
+            bmiResult.className = "form-control bg-light";
+        }
+    }
+
+    weightInput.addEventListener('input', calculateBMI);
+    heightInput.addEventListener('input', calculateBMI);
+    calculateBMI(); // Run once on load just in case values exist
+
+    // Auto-Format Blood Pressure with a slash
+    const bpInput = document.getElementById('bpInput');
+    bpInput.addEventListener('input', function(e) {
+        let val = this.value.replace(/[^0-9]/g, ''); // Keep only numbers
+        if (val.length > 3) {
+            // E.g., if user types 12080 -> 120/80
+            // Most systolic are 2 or 3 digits. If the first digit is < 5, it's probably 3 digits. Let's be smart:
+            // Just insert a '/' dynamically as they type
+            if (val.length > 3 && val.length <= 6) {
+                 if (val.length === 6) {
+                    val = val.substring(0, 3) + '/' + val.substring(3);
+                 } else if (val.length === 5) {
+                    val = val.substring(0, 3) + '/' + val.substring(3);
+                 } else { // length 4 e.g. 9060 -> 90/60
+                    if (val[0] == '1' || val[0] == '2') {
+                         val = val.substring(0, 3) + '/' + val.substring(3); // e.g. 120/8 -> 120/8
+                    } else {
+                         val = val.substring(0, 2) + '/' + val.substring(2); // e.g. 90/80
+                    }
+                 }
+            } 
+        }
+        this.value = val;
+    });
+</script>
+
+<style>
+    .custom-checkbox {
+        background-color: var(--bg-surface-soft);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 8px 16px 8px 36px;
+        border-radius: 20px;
+        transition: all 0.2s ease;
+    }
+    .custom-checkbox:hover {
+        background-color: color-mix(in srgb, var(--primary) 8%, var(--bg-surface-soft));
+    }
+    html[data-theme="dark"] .custom-checkbox {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.12);
+        color: var(--text-primary);
+    }
+    html[data-theme="dark"] .custom-checkbox:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+</style>
+{% endblock %}

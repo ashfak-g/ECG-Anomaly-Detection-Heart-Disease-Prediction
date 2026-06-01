@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .audit-action-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .audit-action-badge.cat-doctor   { background: #dbeafe; color: #1e40af; }
+  .audit-action-badge.cat-appt     { background: #d1fae5; color: #065f46; }
+  .audit-action-badge.cat-report   { background: #fef3c7; color: #92400e; }
+  .audit-action-badge.cat-user     { background: #ede9fe; color: #5b21b6; }
+  .audit-action-badge.cat-predict  { background: #fce7f3; color: #9d174d; }
+  .audit-action-badge.cat-presc    { background: #e0f2fe; color: #075985; }
+  .audit-action-badge.cat-default  { background: #f1f5f9; color: #475569; }
+
+  .detail-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+  .detail-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    max-width: 260px;
+  }
+  .detail-pill .pill-key {
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+  }
+  .detail-pill .pill-sep { color: #cbd5e1; }
+  .detail-pill .pill-val {
+    color: #0f172a;
+    word-break: break-all;
+  }
+</style>
+<div class="container mt-4">
+  <div class="glass-card">
+    <h2 class="mb-3">Admin — Audit Logs</h2>
+    <div class="table-responsive table-shell">
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Resource</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in logs %}
+          {% set cat = l.action.split('.')[0] if l.action else 'default' %}
+          {% if cat == 'doctor' %}{% set badge_cls = 'cat-doctor' %}
+          {% elif cat == 'appointment' %}{% set badge_cls = 'cat-appt' %}
+          {% elif cat == 'report' %}{% set badge_cls = 'cat-report' %}
+          {% elif cat == 'user' %}{% set badge_cls = 'cat-user' %}
+          {% elif cat == 'prediction' %}{% set badge_cls = 'cat-predict' %}
+          {% elif cat == 'prescription' %}{% set badge_cls = 'cat-presc' %}
+          {% else %}{% set badge_cls = 'cat-default' %}
+          {% endif %}
+          <tr>
+            <td class="text-muted" style="font-size:0.8rem;">{{ l.id }}</td>
+            <td style="white-space:nowrap; font-size:0.8rem;">
+              <div>{{ l.timestamp.strftime('%Y-%m-%d') }}</div>
+              <div class="text-muted">{{ l.timestamp.strftime('%H:%M:%S') }}</div>
+            </td>
+            <td style="font-size:0.8rem;">
+              {% if l.user %}
+              <div>{{ l.user.email }}</div>
+              <span class="badge bg-secondary" style="font-size:0.68rem;">{{ l.user.role }}</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              <span class="audit-action-badge {{ badge_cls }}">{{ l.action or '—' }}</span>
+            </td>
+            <td style="font-size:0.8rem; white-space:nowrap;">
+              {% if l.resource_type %}
+              <span class="fw-semibold">{{ l.resource_type }}</span>
+              <span class="text-muted">:{{ l.resource_id }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if l.details and l.details is mapping %}
+              <div class="detail-pills">
+                {% for k, v in l.details.items() %}
+                <span class="detail-pill">
+                  <span class="pill-key">{{ k }}</span>
+                  <span class="pill-sep">→</span>
+                  <span class="pill-val">{{ v }}</span>
+                </span>
+                {% endfor %}
+              </div>
+              {% elif l.details %}
+              <code style="font-size:0.75rem;">{{ l.details }}</code>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No audit logs found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

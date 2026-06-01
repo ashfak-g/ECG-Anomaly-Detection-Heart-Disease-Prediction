@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="glass-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Admin - Doctor Verification</h2>
+      <a href="{{ url_for('main.admin_analytics') }}" class="btn btn-modern-secondary btn-sm">View Analytics</a>
+    </div>
+
+    <div class="table-responsive table-shell">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Verified At</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in doctors %}
+          <tr>
+            <td>{{ d.id }}</td>
+            <td>{{ d.name }}</td>
+            <td>{{ d.email }}</td>
+            <td>
+              {% if d.doctor_verification_status == 'approved' %}
+              <span class="badge bg-success">approved</span>
+              {% elif d.doctor_verification_status == 'rejected' %}
+              <span class="badge bg-danger">rejected</span>
+              {% elif d.doctor_verification_status == 'pending' %}
+              <span class="badge bg-warning text-dark">pending</span>
+              {% else %}
+              <span class="badge bg-secondary">{{ d.doctor_verification_status }}</span>
+              {% endif %}
+            </td>
+            <td>{{ d.doctor_verified_at.strftime('%Y-%m-%d %H:%M') if d.doctor_verified_at else '-' }}</td>
+            <td>
+              {% if d.doctor_verification_status == 'pending' %}
+              <form method="post" class="d-flex gap-2 flex-wrap">
+                <input type="hidden" name="user_id" value="{{ d.id }}">
+                <button name="decision" value="approve" class="btn btn-success btn-sm">Approve</button>
+                <button name="decision" value="reject" class="btn btn-danger btn-sm">Reject</button>
+              </form>
+              {% elif d.doctor_verification_status == 'approved' %}
+              <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Approved</span>
+              {% elif d.doctor_verification_status == 'rejected' %}
+              <span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Rejected</span>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted">No doctor accounts found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 72vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="glass-card animate-fade-up">
+            <h2 class="text-center mb-4 fw-bold" data-i18n="login.title">Login</h2>
+            <p class="text-center text-muted-custom mb-4">Securely access your ECG dashboard.</p>
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control", placeholder="name@example.com", **{'data-i18n-placeholder':'login.email'}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form.password.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.password(id="password", class="form-control", placeholder="********", **{'data-i18n-placeholder':'login.password'}) }}
+                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="password" aria-label="Show password" title="Show password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                </div>
+                    <div class="mb-3 text-end">
+                        <a href="{{ url_for('auth.forgot_password') }}" class="small text-decoration-none">Forgot password?</a>
+                    </div>
+                {{ form.submit(class="btn btn-modern-primary w-100") }}
+            </form>
+            <div class="text-center mt-3">
+                <small class="text-muted-custom"><span data-i18n="login.needAccount">Need an account?</span> <a href="{{ url_for('auth.register') }}"
+                    class="text-primary fw-bold" data-i18n="login.signUp">Sign Up</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

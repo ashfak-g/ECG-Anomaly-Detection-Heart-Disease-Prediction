@@ -1,0 +1,33 @@
+venv/
+__pycache__/
+*.pyc
+instance/
+.pytest_cache/
+.DS_Store
+*.db
+*.sqlite3
+__pycache__
+
+# Local environment and backups
+.env
+backups/
+*.dump
+
+# Other virtual environment folders
+.venv/
+env/
+
+# More Python cache
+*.pyo
+*.pyd
+
+# Redis / local rate limit files
+app-local.redis
+*.rdb
+
+# User uploaded files
+app/static/uploads/
+
+# Editor / Windows files
+.vscode/
+Thumbs.db

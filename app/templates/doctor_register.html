@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 72vh;">
+  <div class="col-md-8 col-lg-7">
+    <div class="glass-card p-4">
+      <h2 class="mb-4">Doctor Registration</h2>
+      <p class="text-muted-custom mb-4">Submit your details for admin verification and platform access.</p>
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">{{ form.name.label(class="form-label") }}{{ form.name(class="form-control") }}</div>
+        <div class="mb-3">{{ form.designation.label(class="form-label") }}{{ form.designation(class="form-control", placeholder="Cardiologist, MBBS, etc.") }}</div>
+        <div class="mb-3">{{ form.email.label(class="form-label") }}{{ form.email(class="form-control") }}</div>
+        <div class="mb-3">
+          {{ form.password.label(class="form-label") }}
+          <div class="input-group">
+            {{ form.password(id="doctor_register_password", class="form-control") }}
+            <button type="button" class="btn btn-outline-secondary" data-password-toggle="doctor_register_password" aria-label="Show password" title="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="mb-3">
+          {{ form.confirm_password.label(class="form-label") }}
+          <div class="input-group">
+            {{ form.confirm_password(id="doctor_register_confirm_password", class="form-control") }}
+            <button type="button" class="btn btn-outline-secondary" data-password-toggle="doctor_register_confirm_password" aria-label="Show password" title="Show password">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+        {{ form.submit(class="btn btn-modern-primary w-100") }}
+      </form>
+      <p class="mt-3 mb-0">Already registered? <a href="{{ url_for('auth.doctor_login') }}">Doctor login</a>.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

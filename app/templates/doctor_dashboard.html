@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h2 class="mb-0">Doctor Dashboard</h2>
+      <a href="{{ url_for('main.doctor_availability') }}" class="btn btn-modern-primary">Set Availability</a>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass-card">
+      <h4>Pending Appointments</h4>
+      {% for appt in pending %}
+      <div class="section-card mb-2">
+        <div><strong>Patient:</strong> {{ appt.patient.name }} ({{ appt.patient.email }})</div>
+        <div><strong>Time:</strong> {{ appt.slot.start_time.strftime('%Y-%m-%d %H:%M') }} - {{ appt.slot.end_time.strftime('%H:%M') }}</div>
+        {% if appt.reason %}<div><strong>Reason:</strong> {{ appt.reason }}</div>{% endif %}
+        <form method="POST" action="{{ url_for('main.doctor_update_appointment_status', appointment_id=appt.id) }}" class="mt-2">
+          <div class="mb-2">
+            <textarea name="reason" class="form-control form-control-sm" placeholder="(Optional) Reason for rejection" rows="2" maxlength="500"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm" name="decision" value="approve">Approve</button>
+            <button class="btn btn-danger btn-sm" name="decision" value="reject">Reject</button>
+          </div>
+        </form>
+      </div>
+      {% else %}
+      <p class="text-muted">No pending appointments.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass-card">
+      <h4>Accepted Appointments</h4>
+      {% for appt in approved %}
+      <div class="section-card mb-2">
+        <div><strong>Patient:</strong> {{ appt.patient.name }}</div>
+        <div><strong>Time:</strong> {{ appt.slot.start_time.strftime('%Y-%m-%d %H:%M') }}</div>
+        <a href="{{ url_for('main.doctor_appointment_detail', appointment_id=appt.id) }}" class="btn btn-sm btn-outline-primary mt-2">Open Patient Details</a>
+      </div>
+      {% else %}
+      <p class="text-muted">No approved appointments.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

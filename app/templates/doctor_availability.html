@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="glass-card">
+      <h3 class="mb-3">Set Free Time</h3>
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">{{ form.start_time.label(class="form-label") }}{{ form.start_time(class="form-control") }}</div>
+        <div class="mb-3">{{ form.end_time.label(class="form-label") }}{{ form.end_time(class="form-control") }}</div>
+        <div class="mb-4">{{ form.duration.label(class="form-label") }}{{ form.duration(class="form-select") }}</div>
+        {{ form.submit(class="btn btn-modern-primary w-100") }}
+      </form>
+      <a href="{{ url_for('main.doctor_dashboard') }}" class="btn btn-link mt-2 p-0">Back to doctor dashboard</a>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="glass-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Upcoming Slots</h3>
+        <form action="{{ url_for('main.clear_availability_slots') }}" method="POST" style="margin: 0;">
+          <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to clear all your future unbooked slots?');">Clear All Unbooked</button>
+        </form>
+      </div>
+      <div class="table-responsive table-shell">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Start</th>
+              <th>End</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for slot in slots %}
+            <tr>
+              <td>{{ slot.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ slot.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{% if slot.is_booked %}<span class="badge bg-secondary">Booked</span>{% else %}<span class="badge bg-success">Free</span>{% endif %}</td>
+              <td>
+                {% if not slot.is_booked %}
+                <form action="{{ url_for('main.delete_availability_slot', slot_id=slot.id) }}" method="POST" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this slot?');">Delete</button>
+                </form>
+                {% else %}
+                <button class="btn btn-sm btn-secondary" disabled>Delete</button>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-muted text-center">No slots added yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center g-4 animate-fade-up">
+
+    <!-- Sidebar / Stats & Quick Links -->
+    <div class="col-lg-4">
+        <!-- Main Profile Info Card -->
+        <div class="glass-card text-center mb-4">
+            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm"
+                style="width: 80px; height: 80px; font-size: 32px;">
+                {{ current_user.name[0] | upper }}
+            </div>
+            <h4 class="mb-1 fw-bold">{{ current_user.name }}</h4>
+            <p class="text-muted small mb-2">{{ current_user.email }}</p>
+            
+            <div class="mb-3">
+                {% if current_user.role == 'patient' %}
+                <span class="badge bg-primary px-3 py-2 rounded-pill"><i class="bi bi-person me-1"></i>Patient</span>
+                {% elif current_user.role == 'doctor' %}
+                <span class="badge bg-info text-dark px-3 py-2 rounded-pill"><i class="bi bi-heart-pulse me-1"></i>Doctor</span>
+                {% if current_user.doctor_verification_status == 'approved' %}
+                    <span class="badge bg-success px-3 py-2 rounded-pill ms-1"><i class="bi bi-patch-check-fill me-1"></i>Verified</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill ms-1"><i class="bi bi-clock-history me-1"></i>Pending Verification</span>
+                {% endif %}
+                {% elif current_user.role == 'admin' %}
+                <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="bi bi-shield-lock me-1"></i>Administrator</span>
+                {% endif %}
+            </div>
+
+            <!-- Doctor Specific Details -->
+            {% if current_user.role == 'doctor' %}
+            <hr>
+            <div class="text-start">
+                <div class="mb-2"><strong>Designation:</strong> <span class="text-muted">{{ current_user.doctor_designation or 'Not Provided' }}</span></div>
+                <div class="mb-2"><strong>BMDC Reg No:</strong> <span class="text-muted">{{ current_user.doctor_bmdc or 'Not Provided' }}</span></div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Links & Stats -->
+        {% if current_user.role == 'patient' %}
+        <div class="glass-card mb-4 p-4 profile-status-card">
+            <h5 class="fw-bold mb-3">Health Profile Status</h5>
+            {% if stats.medical_info_complete %}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-check-circle-fill text-success fs-3 me-2"></i>
+                    <div>
+                        <div class="fw-bold fs-6">Profile Complete</div>
+                        <div class="small text-muted">A complete profile results in better care.</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('main.medical_info') }}" class="btn btn-sm btn-modern-primary w-100">Update Medical Info</a>
+            {% else %}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-exclamation-circle-fill text-warning fs-3 me-2"></i>
+                    <div>
+                        <div class="fw-bold fs-6">Action Required</div>
+                        <div class="small text-muted">Complete your profile to unlock ECG uploads.</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('main.medical_info') }}" class="btn btn-sm btn-modern-primary w-100 fw-bold">Complete Medical Info</a>
+            {% endif %}
+        </div>
+        
+        <div class="glass-card">
+            <h5 class="fw-bold mb-3 border-bottom pb-2">Activity Summary</h5>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Total Appointments</span>
+                <span class="fw-bold">{{ stats.appointments_count }}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">ECG Reports</span>
+                <span class="fw-bold">{{ stats.ecg_reports_count }}</span>
+            </div>
+        </div>
+        
+        {% elif current_user.role == 'doctor' %}
+        <div class="glass-card">
+            <h5 class="fw-bold mb-3 border-bottom pb-2">Practice Dashboard</h5>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Approved Consultations</span>
+                <span class="fw-bold text-success">{{ stats.consultations_count }}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Pending Requests</span>
+                <span class="fw-bold text-warning">{{ stats.pending_requests }}</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Main Content / Update Settings -->
+    <div class="col-lg-8">
+        <div class="glass-card h-100">
+            <h3 class="mb-4 fw-bold pb-2 border-bottom"><i class="bi bi-gear me-2"></i>Account Settings</h3>
+
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <h5 class="mt-4 mb-3 fw-bold text-primary"><i class="bi bi-person-lines-fill me-2"></i>Basic Information</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        {{ form.name.label(class="form-label fw-semibold") }}
+                        {{ form.name(class="form-control") }}
+                        {% if form.name.errors %}
+                        <div class="text-warning mt-1">{% for error in form.name.errors %}<small>{{ error }}</small>{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.email.label(class="form-label fw-semibold") }}
+                        {{ form.email(class="form-control", readonly=true) }}
+                        <small class="text-muted">Email cannot be changed directly.</small>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 mb-3 fw-bold text-primary"><i class="bi bi-shield-lock me-2"></i>Security</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        {{ form.password.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            {{ form.password(id="profile_password", class="form-control", placeholder="Leave blank to keep current") }}
+                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="profile_password" aria-label="Show password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                        <div class="text-warning mt-1">{% for error in form.password.errors %}<small>{{ error }}</small>{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.confirm_password.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            {{ form.confirm_password(id="profile_confirm_password", class="form-control") }}
+                            <button type="button" class="btn btn-outline-secondary" data-password-toggle="profile_confirm_password" aria-label="Show password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        {% if form.confirm_password.errors %}
+                        <div class="text-warning mt-1">{% for error in form.confirm_password.errors %}<small>{{ error }}</small>{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-5">
+                    {{ form.submit(class="btn btn-modern-primary btn-lg px-5 fw-bold") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

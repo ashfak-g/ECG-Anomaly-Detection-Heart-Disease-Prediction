@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 72vh;">
+    <div class="col-md-7 col-lg-6">
+        <div class="glass-card animate-fade-up">
+            <h2 class="text-center mb-4 fw-bold" data-i18n="register.title">Create Account</h2>
+            <p class="text-center text-muted-custom mb-4">Create your patient account to start ECG analysis.</p>
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control", placeholder="John Doe", **{'data-i18n-placeholder':'register.name'}) }}
+                </div>
+                <div class="mb-3">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="form-control", placeholder="name@example.com", **{'data-i18n-placeholder':'register.email'}) }}
+                    {% if form.email.errors %}
+                    <div class="text-warning mt-1">
+                        {% for error in form.email.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.password.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ form.password(id="register_password", class="form-control", placeholder="********", **{'data-i18n-placeholder':'register.password'}) }}
+                        <button type="button" class="btn btn-outline-secondary" data-password-toggle="register_password" aria-label="Show password" title="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {{ form.confirm_password.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ form.confirm_password(id="register_confirm_password", class="form-control", placeholder="********", **{'data-i18n-placeholder':'register.confirmPassword'}) }}
+                        <button type="button" class="btn btn-outline-secondary" data-password-toggle="register_confirm_password" aria-label="Show password" title="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.confirm_password.errors %}
+                    <div class="text-warning mt-1">
+                        {% for error in form.confirm_password.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-modern-primary w-100") }}
+            </form>
+            <div class="text-center mt-3">
+                <small class="text-muted-custom"><span data-i18n="register.haveAccount">Already have an account?</span> <a href="{{ url_for('auth.login') }}"
+                    class="text-primary fw-bold" data-i18n="register.login">Login</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

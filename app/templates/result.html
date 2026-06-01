@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container text-center animate-fade-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold display-5 mb-0" data-i18n="result.title">Analysis Result</h2>
+        <span class="text-muted-custom bg-light px-3 py-2 rounded-pill shadow-sm border">
+            <i class="bi bi-clock-history me-1"></i> {{ prediction.timestamp.strftime('%B %d, %Y at %I:%M %p') }}
+        </span>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="glass-card shadow border-0 position-relative">
+                
+                <!-- Patient info badge (useful if viewed by doctor or for records) -->
+                <div class="position-absolute top-0 start-0 m-3 text-start">
+                    <div class="badge bg-secondary opacity-75 shadow-sm px-3 py-2">
+                        <i class="bi bi-person-circle"></i> Patient Info
+                        <div class="fw-normal small mt-1">Provider: {{ prediction.author.username }}</div>
+                    </div>
+                </div>
+
+                <div class="mb-5 mt-5">
+                    <!-- Wrapped image in an anchor tag to trigger a modal -->
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" class="d-inline-block position-relative image-hover-zoom">
+                        <img src="{{ url_for('static', filename='uploads/' + prediction.image_path) }}"
+                            class="img-fluid rounded-3 shadow border"
+                            style="max-height: 350px; width: auto; object-fit: contain; cursor: pointer;" alt="Uploaded ECG">
+                        <div class="position-absolute bottom-0 end-0 m-2">
+                            <span class="badge bg-dark opacity-75"><i class="bi bi-arrows-fullscreen"></i> Enlarge</span>
+                        </div>
+                    </a>
+                </div>
+
+                <h3 class="mb-4 d-flex align-items-center justify-content-center gap-2">
+                    <span class="text-muted" data-i18n="result.statusLabel">Status:</span>
+                    {% if prediction.result == 'Normal' %}
+                    <span class="badge bg-success px-4 py-2 fs-5 shadow-sm" data-i18n="result.normal"><i class="bi bi-check-circle-fill me-1"></i> Normal</span>
+                    {% else %}
+                    <span class="badge bg-danger px-4 py-2 fs-5 shadow-sm animate-pulse" data-i18n="result.abnormal"><i class="bi bi-exclamation-triangle-fill me-1"></i> Abnormal</span>
+                    {% endif %}
+                </h3>
+
+                <div class="d-flex justify-content-center align-items-center gap-3 mb-4 p-3 bg-light rounded-3 border result-confidence-wrap">
+                    <span class="h5 mb-0 fw-bold text-primary result-confidence-label" data-i18n="result.confidenceLabel">AI Confidence</span>
+                    <div class="progress shadow-inner" style="width: 200px; height: 16px; border-radius: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated py-1 {% if prediction.confidence > 0.9 %}bg-success{% else %}bg-warning text-dark{% endif %}"
+                            id="confidenceBar"
+                            role="progressbar" 
+                            data-confidence="{{ (prediction.confidence * 100)|round(2) }}"
+                            style="width: 0%; transition: width 1.5s ease-out;">
+                        </div>
+                    </div>
+                    <span class="fw-bold fs-5" id="confidenceText">0%</span>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <!-- Dynamic Action Prompts -->
+                <div class="mb-4 text-start">
+                    {% if prediction.result == 'Normal' %}
+                        <div class="alert alert-success border-0 shadow-sm">
+                            <h5 class="fw-bold"><i class="bi bi-shield-check me-2"></i>Good News</h5>
+                            <p class="mb-0">The AI model did not detect any significant anomalies in this ECG. Continue to maintain a healthy lifestyle and proceed with regular checkups.</p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger border-0 shadow-sm">
+                            <h5 class="fw-bold"><i class="bi bi-heart-pulse-fill me-2"></i>Action Recommended</h5>
+                            <p class="mb-3">The model identified a potential abnormality. Please do not panic, as AI is not a substitute for a clinical diagnosis. We strongly advise consulting with a medical professional.</p>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('main.medical_help') }}" class="btn btn-danger fw-bold shadow-sm"><i class="bi bi-geo-alt-fill"></i> Find Nearby Hospitals</a>
+                                <!-- Redirects to chat, pre-filling the prompt via JS or simple link query (optional) -->
+                                {% if current_user.is_authenticated and current_user.role not in ['admin', 'doctor'] %}
+                                <a href="{{ url_for('main.chatbot') }}?q=Explain+an+abnormal+ECG+result" class="btn btn-outline-danger fw-bold bg-white"><i class="bi bi-robot"></i> Ask AI To Explain</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="alert alert-secondary mb-4 text-start shadow-sm border-0" style="font-size: 0.85rem;">
+                    <strong><i class="bi bi-info-circle-fill text-muted me-1"></i> <span data-i18n="result.disclaimerLabel">Disclaimer:</span></strong>
+                    <span data-i18n="result.disclaimerText" class="text-muted">This result is generated by an AI model for research purposes only. It is not a medical diagnosis. Please consult a cardiologist for clinical interpretation.</span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary px-4 fw-bold shadow-sm" data-i18n="result.backToDashboard">
+                        <i class="bi bi-arrow-left"></i> Dashboard
+                    </a>
+                    
+                    {% if medical_complete %}
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('main.preview_report', prediction_id=prediction.id) }}" class="btn btn-outline-primary px-4 fw-bold shadow-sm" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-eye"></i> Preview
+                        </a>
+                      <a href="{{ url_for('main.download_report', prediction_id=prediction.id) }}" class="btn btn-modern-primary px-4 fw-bold shadow-sm" data-i18n="result.downloadReport">
+                        <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF Report
+                      </a>
+                    </div>
+                    {% else %}
+                    <span class="btn btn-modern-primary px-4 disabled opacity-50 shadow-sm" data-i18n="result.completeProfile">Complete Profile First</span>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade glass-modal" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-header border-0 pb-0 justify-content-end">
+        <button type="button" class="btn-close btn-close-white fs-4" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center pt-0">
+        <img src="{{ url_for('static', filename='uploads/' + prediction.image_path) }}" class="img-fluid rounded shadow-lg border border-3 border-white" style="max-height: 85vh;" alt="Full ECG Image">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- (report preview UI removed; preview opens in a new tab) -->
+
+<style>
+    /* Pulse animation for the abnormal badge */
+    @keyframes pulse-danger {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .animate-pulse {
+        animation: pulse-danger 2s infinite;
+    }
+    .image-hover-zoom {
+        transition: transform 0.2s ease-in-out;
+    }
+    .image-hover-zoom:hover {
+        transform: scale(1.02);
+    }
+    /* Darken backdrop for modal */
+    .glass-modal .modal-backdrop.show {
+        opacity: 0.85;
+        backdrop-filter: blur(5px);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const bar = document.getElementById('confidenceBar');
+        const textLabel = document.getElementById('confidenceText');
+        const targetConfidence = parseFloat(bar.getAttribute('data-confidence'));
+
+        // Brief delay for dramatic effect before animation starts
+        setTimeout(() => {
+            // Animate progress bar width
+            bar.style.width = targetConfidence + '%';
+            
+            // Animate number counting up
+            let start = 0;
+            const duration = 1500; // ms
+            const interval = 30; // ms update rate
+            const steps = duration / interval;
+            const increment = targetConfidence / steps;
+
+            const counter = setInterval(() => {
+                start += increment;
+                if (start >= targetConfidence) {
+                    start = targetConfidence;
+                    clearInterval(counter);
+                }
+                textLabel.textContent = start.toFixed(1) + '%';
+            }, interval);
+            
+        }, 300);
+    });
+</script>
+{% endblock %}

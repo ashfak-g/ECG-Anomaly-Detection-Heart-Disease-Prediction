@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+<div class="row justify-content-center animate-fade-up">
+    <div class="col-lg-10">
+        <div class="glass-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                    <h2 class="fw-bold mb-1 text-danger" data-i18n="medicalHelp.title">Find Medical Help Nearby</h2>
+                    <p class="text-muted-custom mb-0" data-i18n="medicalHelp.subtitle">Select your city to see nearby hospitals and cardiology support on the map.</p>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <button type="button" id="useLocationBtn" class="btn btn-modern-secondary btn-sm" data-i18n="medicalHelp.useLocation">
+                    Use My Current Location
+                </button>
+                <small id="locationStatus" class="text-muted-custom" data-i18n="medicalHelp.locationPending">Location not shared yet.</small>
+            </div>
+
+            <div class="mb-4">
+                <select class="form-select form-select-lg" id="helpCitySelect" aria-label="Select City" data-i18n-aria-label="medicalHelp.selectLabel">
+                    <option selected disabled data-i18n="medicalHelp.selectPlaceholder">Select your closest city</option>
+                    <option value="Dhaka">Dhaka</option>
+                    <option value="Chittagong">Chittagong</option>
+                    <option value="Sylhet">Sylhet</option>
+                    <option value="Khulna">Khulna</option>
+                    <option value="Rajshahi">Rajshahi</option>
+                </select>
+            </div>
+
+            <div id="help-hospital-map" class="rounded-3 border border-primary-subtle mb-4"
+                style="height: 420px; background: #f5f7fa;"></div>
+
+            <div id="help-hospital-list" class="row g-3">
+                <p class="text-center text-muted-custom col-12 mb-0" data-i18n="medicalHelp.loadPrompt">Select a city to load nearby hospitals.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    const helpI18n = window.ecgI18n;
+
+    function helpText(key, fallback) {
+        return helpI18n && typeof helpI18n.t === 'function' ? helpI18n.t(key) || fallback : fallback;
+    }
+
+    let helpMap;
+    let helpMarkers;
+    let userLatLng = null;
+    let userAccuracyMeters = null;
+    let userLocationMarker = null;
+    let userAccuracyCircle = null;
+    let locationWatchId = null;
+    let locationWatchTimeoutId = null;
+    let bestPosition = null;
+
+    function calculateDistanceKm(lat1, lon1, lat2, lon2) {
+        const toRadians = (deg) => (deg * Math.PI) / 180;
+        const earthRadiusKm = 6371;
+        const dLat = toRadians(lat2 - lat1);
+        const dLon = toRadians(lon2 - lon1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusKm * c;
+    }
+
+    function initializeHelpMap() {
+        if (typeof L === 'undefined' || helpMap) {
+            return;
+        }
+
+        helpMap = L.map('help-hospital-map').setView([23.6850, 90.3563], 7);
+        helpMarkers = L.layerGroup().addTo(helpMap);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(helpMap);
+
+        if (userLatLng) {
+            userLocationMarker = L.marker(userLatLng).addTo(helpMap);
+            userLocationMarker.bindPopup(helpText('medicalHelp.userLocation', 'Your current location'));
+
+            if (typeof userAccuracyMeters === 'number') {
+                userAccuracyCircle = L.circle(userLatLng, {
+                    radius: userAccuracyMeters,
+                    color: '#0d6efd',
+                    fillColor: '#0d6efd',
+                    fillOpacity: 0.12,
+                    weight: 1,
+                }).addTo(helpMap);
+            }
+        }
+    }
+
+    function refreshCurrentCityHospitals() {
+        const citySelect = document.getElementById('helpCitySelect');
+        if (citySelect && citySelect.value) {
+            citySelect.dispatchEvent(new Event('change'));
+        }
+    }
+
+    function applyUserPosition(position, statusPrefix = 'Location detected') {
+        userLatLng = [position.coords.latitude, position.coords.longitude];
+        userAccuracyMeters = position.coords.accuracy;
+
+        const locationStatus = document.getElementById('locationStatus');
+        locationStatus.textContent = `${statusPrefix}: ${userLatLng[0].toFixed(5)}, ${userLatLng[1].toFixed(5)} (±${Math.round(userAccuracyMeters)}m).`;
+
+        initializeHelpMap();
+        if (!helpMap) {
+            return;
+        }
+
+        if (userLocationMarker) {
+            userLocationMarker.setLatLng(userLatLng);
+        } else {
+            userLocationMarker = L.marker(userLatLng).addTo(helpMap);
+            userLocationMarker.bindPopup(helpText('medicalHelp.userLocation', 'Your current location'));
+        }
+
+        if (userAccuracyCircle) {
+            userAccuracyCircle.setLatLng(userLatLng);
+            userAccuracyCircle.setRadius(userAccuracyMeters);
+        } else {
+            userAccuracyCircle = L.circle(userLatLng, {
+                radius: userAccuracyMeters,
+                color: '#0d6efd',
+                fillColor: '#0d6efd',
+                fillOpacity: 0.12,
+                weight: 1,
+            }).addTo(helpMap);
+        }
+    }
+
+    function stopLocationWatch() {
+        if (locationWatchId !== null) {
+            navigator.geolocation.clearWatch(locationWatchId);
+            locationWatchId = null;
+        }
+        if (locationWatchTimeoutId) {
+            clearTimeout(locationWatchTimeoutId);
+            locationWatchTimeoutId = null;
+        }
+    }
+
+    function renderHelpHospitals(hospitals, city) {
+        const listContainer = document.getElementById('help-hospital-list');
+        if (!helpMap || !helpMarkers) {
+            return;
+        }
+
+        helpMarkers.clearLayers();
+        listContainer.innerHTML = '';
+
+        if (!hospitals.length) {
+            listContainer.innerHTML = `<p class="text-center text-muted col-12 mb-0">${helpText('medicalHelp.noHospitals', 'No hospitals found for this city.')}</p>`;
+            helpMap.setView([23.6850, 90.3563], 7);
+            return;
+        }
+
+        const enrichedHospitals = hospitals.map((hospital) => {
+            if (
+                userLatLng &&
+                typeof hospital.latitude === 'number' &&
+                typeof hospital.longitude === 'number'
+            ) {
+                const distanceKm = calculateDistanceKm(
+                    userLatLng[0],
+                    userLatLng[1],
+                    hospital.latitude,
+                    hospital.longitude
+                );
+                return { ...hospital, distanceKm };
+            }
+            return hospital;
+        });
+
+        if (userLatLng) {
+            enrichedHospitals.sort((a, b) => {
+                const aDistance = typeof a.distanceKm === 'number' ? a.distanceKm : Number.POSITIVE_INFINITY;
+                const bDistance = typeof b.distanceKm === 'number' ? b.distanceKm : Number.POSITIVE_INFINITY;
+                return aDistance - bDistance;
+            });
+        }
+
+        const bounds = [];
+        if (userLatLng) {
+            bounds.push(userLatLng);
+        }
+
+        enrichedHospitals.forEach(hospital => {
+            if (typeof hospital.latitude === 'number' && typeof hospital.longitude === 'number') {
+                const marker = L.marker([hospital.latitude, hospital.longitude]).addTo(helpMarkers);
+                const distanceText = typeof hospital.distanceKm === 'number'
+                    ? `<br><small><strong>${hospital.distanceKm.toFixed(2)} km</strong> from your location</small>`
+                    : '';
+                marker.bindPopup(`
+                    <div style="min-width: 180px;">
+                        <strong>${hospital.name}</strong><br>
+                        <small>${hospital.location || city}</small><br>
+                        <small>${hospital.phone}</small>
+                        ${distanceText}
+                    </div>
+                `);
+                bounds.push([hospital.latitude, hospital.longitude]);
+            }
+
+            const cardDistanceText = typeof hospital.distanceKm === 'number'
+                ? `<p class="card-text mb-1"><i class="bi bi-signpost-split-fill text-muted"></i> <strong>${hospital.distanceKm.toFixed(2)} km</strong> away</p>`
+                : '';
+
+            listContainer.innerHTML += `
+                <div class="col-md-6">
+                    <div class="card h-100 border-primary shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary fw-bold">${hospital.name}</h5>
+                            <p class="card-text mb-1"><i class="bi bi-geo-alt-fill text-muted"></i> ${hospital.location || city}</p>
+                            <p class="card-text mb-1"><i class="bi bi-person-fill text-muted"></i> <strong>${hospital.doctor}</strong></p>
+                            ${cardDistanceText}
+                            <p class="card-text"><i class="bi bi-telephone-fill text-muted"></i> <a href="tel:${hospital.phone}" class="text-decoration-none text-dark">${hospital.phone}</a></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (bounds.length > 0) {
+            helpMap.fitBounds(bounds, { padding: [30, 30] });
+        }
+    }
+
+    function requestCurrentLocation() {
+        const locationStatus = document.getElementById('locationStatus');
+        if (!navigator.geolocation) {
+            locationStatus.textContent = helpText('medicalHelp.geolocationUnsupported', 'Geolocation is not supported by this browser.');
+            return;
+        }
+
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            locationStatus.textContent = helpText('medicalHelp.httpsRequired', 'Location needs HTTPS to get precise GPS data.');
+            return;
+        }
+
+        stopLocationWatch();
+        bestPosition = null;
+        locationStatus.textContent = helpText('medicalHelp.locating', 'Getting your location and improving precision...');
+
+        locationWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
+                    bestPosition = position;
+                    const improving = position.coords.accuracy > 50;
+                    applyUserPosition(position, improving ? helpText('medicalHelp.improving', 'Improving location') : helpText('medicalHelp.locked', 'Location locked'));
+                }
+
+                if (position.coords.accuracy <= 50) {
+                    stopLocationWatch();
+                    refreshCurrentCityHospitals();
+                }
+            },
+            (error) => {
+                if (!bestPosition) {
+                    locationStatus.textContent = helpText('medicalHelp.locationPermissionDenied', 'Unable to access your location. Please allow location permission and enable GPS.');
+                }
+                if (error && error.code === 1) {
+                    stopLocationWatch();
+                }
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+
+        locationWatchTimeoutId = setTimeout(() => {
+            stopLocationWatch();
+            if (bestPosition) {
+                applyUserPosition(bestPosition, helpText('medicalHelp.bestAvailable', 'Best available location'));
+                refreshCurrentCityHospitals();
+            }
+        }, 12000);
+    }
+
+    document.getElementById('useLocationBtn')?.addEventListener('click', requestCurrentLocation);
+
+    document.getElementById('helpCitySelect')?.addEventListener('change', function () {
+        initializeHelpMap();
+        const city = this.value;
+        const listContainer = document.getElementById('help-hospital-list');
+        listContainer.innerHTML = '<div class="text-center w-100"><div class="spinner-border text-primary" role="status"></div></div>';
+
+        fetch(`/get_hospitals/${city}`)
+            .then(response => response.json())
+            .then(data => renderHelpHospitals(data, city))
+            .catch(error => {
+                console.error('Error:', error);
+                listContainer.innerHTML = `<p class="text-center text-danger col-12">${helpText('medicalHelp.loadFailed', 'Failed to load data.')}</p>`;
+                renderHelpHospitals([], city);
+            });
+    });
+</script>
+{% endblock %}

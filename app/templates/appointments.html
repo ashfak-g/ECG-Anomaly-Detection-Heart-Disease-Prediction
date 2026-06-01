@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="glass-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Request Appointment</h3>
+        <input type="text" id="doctorSearch" class="form-control form-control-sm w-50" placeholder="Search by doctor name...">
+      </div>
+      <p class="text-muted-custom">Choose a doctor and select their free time slot. You can book a slot at any time of the day (24/7 access).</p>
+      
+      <div class="doctor-list" id="doctorList">
+        {% for doctor, slots in available_slots_by_doctor_obj.items() %}
+        <div class="doctor-card p-3 mb-3 border rounded shadow-sm">
+          <div class="fw-bold fs-5 doctor-name">{{ doctor.name }}</div>
+          <div class="text-muted small mb-3">{{ doctor.doctor_designation or 'Doctor' }}</div>
+          
+          <form method="POST" class="d-flex flex-wrap flex-md-nowrap gap-2 align-items-center">
+            {{ form.hidden_tag() }}
+            <select name="slot_id" class="form-select form-select-sm flex-grow-1" required>
+              <option value="" disabled selected>Select an available time slot</option>
+              {% for slot in slots %}
+              <option value="{{ slot.id }}">{{ slot.start_time.strftime('%Y-%m-%d %I:%M %p') }} - {{ slot.end_time.strftime('%I:%M %p') }}</option>
+              {% endfor %}
+            </select>
+            <input type="text" class="form-control form-control-sm" name="reason" placeholder="Reason (optional)" style="max-width: 200px;">
+            <button class="btn btn-sm btn-modern-primary">Request</button>
+          </form>
+        </div>
+        {% else %}
+        <div class="text-center text-muted p-4">No free slots available from any doctor right now.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="glass-card">
+      <h3 class="mb-3">My Appointments</h3>
+      <div class="list-group">
+        {% for appt in my_appointments %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <strong>Dr. {{ appt.doctor.name }}</strong>
+              <div class="small">{{ appt.slot.start_time.strftime('%Y-%m-%d %I:%M %p') }} to {{ appt.slot.end_time.strftime('%I:%M %p') }}</div>
+              {% if appt.reason %}<div class="small text-muted mt-1">Reason: {{ appt.reason }}</div>{% endif %}
+            </div>
+            <span class="badge {% if appt.status == 'Accepted' %}bg-success{% elif appt.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ appt.status }}</span>
+          </div>
+
+          {% if appt.status == 'pending' %}
+          <div class="mt-3 d-flex flex-wrap gap-2 align-items-center border-top pt-2">
+            <form method="POST" action="{{ url_for('main.cancel_appointment', appointment_id=appt.id) }}" class="m-0">
+              <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</button>
+            </form>
+
+            {% set doc_slots = available_slots_by_doctor.get(appt.doctor_id, []) %}
+            {% if doc_slots %}
+            <form method="POST" action="{{ url_for('main.reschedule_appointment', appointment_id=appt.id) }}" class="m-0 ms-auto">
+              <div class="input-group input-group-sm">
+                <select name="new_slot_id" class="form-select" required style="max-width: 200px;">
+                  <option value="" disabled selected>Choose a new slot</option>
+                  {% for slot in doc_slots %}
+                  <option value="{{ slot.id }}">{{ slot.start_time.strftime('%Y-%m-%d %I:%M %p') }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-outline-primary">Reschedule</button>
+              </div>
+            </form>
+            {% else %}
+            <span class="text-muted small ms-auto fst-italic">No free slots left to reschedule</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if appt.prescription %}
+          <div class="mt-2"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.download_prescription', appointment_id=appt.id) }}">Download Prescription</a></div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="text-muted text-center p-3 border rounded shadow-sm">No appointments requested yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('doctorSearch').addEventListener('keyup', function() {
+    let filter = this.value.toLowerCase();
+    let cards = document.querySelectorAll('.doctor-card');
+    
+    cards.forEach(card => {
+        let name = card.querySelector('.doctor-name').textContent.toLowerCase();
+        if (name.includes(filter)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

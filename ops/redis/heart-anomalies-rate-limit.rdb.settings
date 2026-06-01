@@ -1,0 +1,1 @@
+{"pidfile": "/tmp/tmpatwkyor2/redis.pid", "unixsocket": "/tmp/tmpatwkyor2/redis.socket", "dbdir": "/home/msi/Reday/4th Year Project/Heart-Anomalies-V.2-main/ops/redis", "dbfilename": "heart-anomalies-rate-limit.rdb"}

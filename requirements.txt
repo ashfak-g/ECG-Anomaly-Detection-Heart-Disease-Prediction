@@ -1,0 +1,35 @@
+# Core
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+WTForms
+email_validator
+werkzeug
+python-dotenv
+Flask-Mail
+
+# AI / Image Processing
+Pillow
+numpy
+google-genai
+tensorflow>=2.13.0
+keras>=2.13.0
+
+# PDF Reports
+reportlab
+
+# Database
+psycopg2-binary
+
+# Security & Rate Limiting
+Flask-Limiter
+redis
+redislite
+
+# JWT (API layer)
+Flask-JWT-Extended
+
+# Production Server
+gunicorn
+markdown==3.7

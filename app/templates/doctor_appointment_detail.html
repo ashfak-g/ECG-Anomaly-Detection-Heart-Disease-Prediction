@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="glass-card">
+      <h3 class="mb-3">Patient Medical History</h3>
+      <p><strong>Name:</strong> {{ patient.name }}</p>
+      <p><strong>Email:</strong> {{ patient.email }}</p>
+      <hr>
+      <h5>Medical Info</h5>
+      {% if medical_info %}
+      <ul>
+        <li>Phone: {{ medical_info.phone_number or '-' }}</li>
+        <li>Age: {{ medical_info.age if medical_info.age is not none else '-' }}</li>
+        <li>Gender: {{ medical_info.gender or '-' }}</li>
+        <li>Blood Group: {{ medical_info.blood_group or '-' }}</li>
+        <li>Blood Pressure: {{ medical_info.blood_pressure or '-' }}</li>
+        <li>Allergy: {{ medical_info.allergy or '-' }}</li>
+        <li>Diabetes: {{ 'Yes' if medical_info.diabetes else 'No' }}</li>
+      </ul>
+      {% else %}
+      <p class="text-muted">No medical profile available.</p>
+      {% endif %}
+
+      <h5 class="mt-4">ECG Reports</h5>
+      <div class="table-responsive table-shell">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Date</th><th>Result</th><th>Confidence</th><th>Report</th></tr></thead>
+          <tbody>
+          {% for p in predictions %}
+          <tr>
+            <td>{{ p.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ p.result }}</td>
+            <td>{{ (p.confidence * 100)|round(1) }}%</td>
+            <td><a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.download_report', prediction_id=p.id) }}">Download</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted">No ECG reports found.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="glass-card">
+      <h3 class="mb-3">Write Prescription</h3>
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          {{ form.content.label(class="form-label") }}
+          {{ form.content(class="form-control", rows="14", placeholder="Write medicine, dosage, tests, advice...") }}
+        </div>
+        {{ form.submit(class="btn btn-modern-primary w-100") }}
+      </form>
+      {% if existing_prescription %}
+      <div class="d-flex gap-2 mt-3">
+        <a class="btn btn-outline-primary flex-grow-1" href="{{ url_for('main.preview_prescription', appointment_id=appointment.id) }}" target="_blank" rel="noopener noreferrer">
+          <i class="bi bi-eye"></i> Preview
+        </a>
+        <a class="btn btn-outline-primary flex-grow-1" href="{{ url_for('main.download_prescription', appointment_id=appointment.id) }}">
+          <i class="bi bi-file-earmark-pdf-fill"></i> Download
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- (prescription preview UI removed; preview opens in a new tab) -->
+{% endblock %}
+{% endblock %}
