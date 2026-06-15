@@ -299,7 +299,7 @@ Main Contributor and Project Lead
 
 ### Supervisor
 
-**Md. Solaiman Mia** <br> Assistant Professor, Department of Computer Science and Engineering</br> <br>Green University of Bangladesh</br>
+*Md. Solaiman Mia* <br> Assistant Professor, Department of Computer Science and Engineering<br>Green University of Bangladesh
   <br>Email: [solaiman@cse.green.edu.bd](mailto:solaiman@cse.green.edu.bd)</br>
 
 ### Project Title
