@@ -22,9 +22,9 @@
 ## Supervisor
 
 **Md. Solaiman Mia**
-Assistant Professor
-Department of Computer Science and Engineering
-Green University of Bangladesh
+***Assistant Professor***
+***Department of Computer Science and Engineering***
+***Green University of Bangladesh***
 Email: [solaiman@cse.green.edu.bd](mailto:solaiman@cse.green.edu.bd)
 
 ---
